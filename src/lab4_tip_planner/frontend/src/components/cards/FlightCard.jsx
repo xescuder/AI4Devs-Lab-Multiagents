@@ -1,0 +1,66 @@
+export default function FlightCard({ option, selected, onSelect }) {
+  return (
+    <div onClick={onSelect}
+      className={`cursor-pointer rounded-xl border-2 p-5 transition-all duration-200 hover:shadow-md ${
+        selected ? "border-indigo-500 bg-indigo-50/60 shadow-md" : "border-gray-200 bg-white hover:border-gray-300"
+      }`}>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <span className="text-lg font-bold text-gray-800">{option.airline}</span>
+          {option.recommended && (
+            <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+              ⭐ Recomendado
+            </span>
+          )}
+        </div>
+        <Radio checked={selected} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-3">
+        <Leg label="IDA" leg={option.outbound} />
+        <Leg label="VUELTA" leg={option.return} />
+      </div>
+
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div>
+          <span className="text-2xl font-bold text-indigo-600">{option.price_per_person}€</span>
+          <span className="text-sm text-gray-500 ml-1">/persona</span>
+        </div>
+        <span className="text-sm text-gray-500">Total: <strong>{option.price_total}€</strong></span>
+      </div>
+
+      {option.reason && (
+        <p className="text-xs text-gray-500 mt-2 italic">{option.reason}</p>
+      )}
+    </div>
+  );
+}
+
+function Leg({ label, leg }) {
+  if (!leg) return null;
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-semibold text-gray-400 uppercase">{label}</p>
+      <p className="text-sm font-medium text-gray-800">{leg.route}</p>
+      <p className="text-sm text-gray-600">📅 {leg.date}</p>
+      <p className="text-sm text-gray-600">🕐 {leg.departure} → {leg.arrival} ({leg.duration})</p>
+      <p className={`text-xs font-medium ${leg.stops === "Directo" ? "text-green-600" : "text-amber-600"}`}>
+        {leg.stops}
+      </p>
+    </div>
+  );
+}
+
+function Radio({ checked }) {
+  return (
+    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+      checked ? "border-indigo-500 bg-indigo-500" : "border-gray-300"
+    }`}>
+      {checked && (
+        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      )}
+    </div>
+  );
+}

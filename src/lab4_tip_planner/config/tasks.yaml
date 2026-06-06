@@ -1,0 +1,217 @@
+flight_search_task:
+  description: >
+    Busca las mejores opciones de vuelo de ida y vuelta desde {pais_origen}
+    hasta {pais_destino} para {numero_adultos} adulto(s).
+
+    FECHAS:
+    - Ida preferida: {fecha_ida}
+    - Vuelta preferida: {fecha_vuelta}
+    - Flexibilidad: ±{flexibilidad_dias} días (puedes buscar vuelos más baratos
+      dentro de este margen de fechas)
+
+    RESTRICCIÓN DE ESCALAS: {tipo_vuelo}.
+    Si solo se permiten vuelos directos, NO propongas vuelos con escala.
+    Si se permite hasta 1 escala, puedes incluir opciones con máximo 1 escala.
+
+    INSTRUCCIONES:
+    1. Busca vuelos respetando la restricción de escalas indicada arriba.
+    2. Busca en las fechas indicadas y dentro del margen de flexibilidad.
+    3. Propón exactamente 3 opciones de vuelo completas (ida+vuelta cada una).
+    4. Si hay vuelos significativamente más baratos moviendo las fechas dentro
+       del margen permitido, recomiéndalos.
+    5. Prioriza la mejor relación precio/duración.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional ni markdown.
+  expected_output: >
+    {
+      "options": [
+        {
+          "airline": "Nombre aerolínea",
+          "outbound": {
+            "date": "YYYY-MM-DD",
+            "departure": "HH:MM",
+            "arrival": "HH:MM",
+            "route": "Ciudad → Ciudad",
+            "stops": "Directo" o "1 escala en Ciudad (Xh)",
+            "duration": "Xh Xm"
+          },
+          "return": {
+            "date": "YYYY-MM-DD",
+            "departure": "HH:MM",
+            "arrival": "HH:MM",
+            "route": "Ciudad → Ciudad",
+            "stops": "Directo" o "1 escala en Ciudad (Xh)",
+            "duration": "Xh Xm"
+          },
+          "price_per_person": 000,
+          "price_total": 000,
+          "recommended": true/false,
+          "reason": "Por qué es buena o mala opción"
+        }
+      ],
+      "notes": "Notas sobre fechas o disponibilidad si aplica"
+    }
+  human_input: true
+
+transport_search_task:
+  description: >
+    Busca las mejores opciones de alquiler de coche en {pais_destino}.
+
+    IMPORTANTE: Ten en cuenta los horarios de vuelo aprobados en el paso anterior.
+    - Si el vuelo de ida llega tarde, la recogida del coche debe ser al día siguiente
+      o en el aeropuerto a la hora de llegada.
+    - Si el vuelo de vuelta sale temprano, la devolución debe ser la noche anterior
+      o en el aeropuerto antes del vuelo.
+    - Ajusta los días de alquiler en consecuencia.
+
+    INSTRUCCIONES:
+    1. Propón exactamente 3 opciones de empresas de alquiler diferentes.
+    2. Considera categorías de vehículo apropiadas para el destino.
+    3. Detalla la política de combustible y seguros incluidos.
+    4. Calcula precio total y precio por día según los días reales de uso.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional ni markdown.
+  expected_output: >
+    {
+      "options": [
+        {
+          "company": "Nombre empresa",
+          "category": "Económico/Compacto/SUV/etc.",
+          "model": "Modelo ejemplo",
+          "fuel_policy": "Full-to-full / Prepago",
+          "insurance": "Tipo de cobertura incluida",
+          "price_per_day": 00,
+          "price_total": 000,
+          "deposit": "Depósito estimado",
+          "recommended": true/false,
+          "reason": "Por qué esta opción destaca"
+        }
+      ],
+      "notes": "Requisitos de licencia, política de cancelación, etc."
+    }
+  human_input: true
+
+experience_activities_task:
+  description: >
+    Planifica las actividades para {numero_dias} días en {pais_destino}
+    para {numero_adultos} adulto(s).
+
+    IMPORTANTE: Ten en cuenta los horarios de vuelo aprobados:
+    - El PRIMER DÍA, programa actividades solo DESPUÉS de la hora de llegada
+      del vuelo (contempla tiempo de aeropuerto, transporte al centro, etc.).
+    - El ÚLTIMO DÍA, programa actividades solo ANTES de la hora necesaria
+      para llegar al aeropuerto (al menos 3h antes del vuelo de vuelta).
+    - Si llegas de noche el primer día, ese día debe ser de descanso/llegada.
+
+    INSTRUCCIONES:
+    1. Para cada día, separa las actividades en dos categorías:
+       - "free": visitas gratuitas (monumentos, barrios, parques, miradores, plazas, iglesias)
+       - "paid": actividades de pago (museos con entrada, tours guiados, experiencias, excursiones)
+    2. Para CADA actividad indica la hora de inicio y la duración estimada.
+    3. Organiza el horario de forma realista: contempla desplazamientos,
+       descansos para comer y tiempo libre.
+    4. NO satures el viaje. Algunos días pueden ser de descanso.
+    5. Agrupa actividades por zona geográfica para minimizar desplazamientos.
+    6. Alterna días intensos con días relajados.
+    7. Para CADA actividad, usa la herramienta search_activity_image para
+       obtener una URL de imagen real del lugar. Incluye la URL en el campo "image_url".
+
+    Recuerda: menos es más. Un viajero disfruta más 3 experiencias memorables
+    que 10 visitas apresuradas.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional ni markdown.
+  expected_output: >
+    {
+      "days": [
+        {
+          "day": 1,
+          "title": "Título temático del día",
+          "type": "active" o "rest",
+          "free_activities": [
+            {
+              "name": "Nombre del lugar/visita",
+              "description": "Descripción breve",
+              "start_time": "HH:MM",
+              "duration_minutes": 90,
+              "image_url": "URL de imagen real del lugar",
+              "tip": "Consejo local opcional"
+            }
+          ],
+          "paid_activities": [
+            {
+              "name": "Nombre de la actividad",
+              "description": "Descripción breve",
+              "start_time": "HH:MM",
+              "duration_minutes": 120,
+              "price_per_person": 25,
+              "image_url": "URL de imagen real del lugar",
+              "tip": "Consejo local opcional"
+            }
+          ]
+        }
+      ],
+      "total_free_time_hours": 00,
+      "total_paid_time_hours": 00,
+      "total_budget_per_person": 000
+    }
+  human_input: true
+
+accommodation_night_task:
+  description: >
+    Busca exactamente 3 opciones de alojamiento tipo Airbnb en {pais_destino}
+    para la NOCHE {night_number} del viaje. Los alojamientos deben tener
+    capacidad para {numero_adultos} adulto(s) y NO superar {presupuesto_max_noche} EUR/noche.
+
+    IMPORTANTE:
+    - Usa la información del itinerario de actividades aprobado para elegir
+      la zona/barrio más conveniente según las actividades del día y el siguiente.
+    - La PRIMERA noche debe estar cerca del aeropuerto o de la ruta desde
+      el aeropuerto si el vuelo llega tarde.
+    - La ÚLTIMA noche debe estar cerca del aeropuerto si el vuelo de vuelta
+      sale temprano.
+
+    INSTRUCCIONES:
+    1. Propón exactamente 3 opciones diferentes.
+    2. Prioriza alojamientos cercanos a las actividades del día.
+    3. Prioriza alojamientos con buenas reseñas (4.5+) y Superhosts.
+    4. Usa la herramienta search_accommodation_image para cada opción.
+       La herramienta devuelve un JSON con "image_url" y "listing_url".
+       Copia esos valores directamente en los campos del alojamiento.
+    4. Respeta el presupuesto máximo de {presupuesto_max_noche} EUR/noche.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional.
+  expected_output: >
+    {
+      "night": {night_number},
+      "city": "Ciudad",
+      "zone": "Zona/Barrio",
+      "options": [
+        {
+          "name": "Nombre/Tipo",
+          "neighborhood": "Barrio",
+          "description": "Por qué vale la pena (1 frase)",
+          "price": 000,
+          "rating": 4.8,
+          "superhost": true/false,
+          "image_url": "URL imagen",
+          "listing_url": "URL listing Airbnb"
+        }
+      ]
+    }
+
+accommodation_consolidation_task:
+  description: >
+    Consolida los resultados de alojamiento de todas las noches del viaje
+    en un único JSON. Recibes los resultados de cada noche como contexto.
+    NO busques alojamientos nuevos, solo agrupa lo que ya se encontró.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional.
+  expected_output: >
+    {
+      "nights": [
+        {"night": 1, "city": "...", "zone": "...", "options": [...]},
+        {"night": 2, "city": "...", "zone": "...", "options": [...]}
+      ],
+      "price_range": {"min": 000, "max": 000}
+    }
+  human_input: true

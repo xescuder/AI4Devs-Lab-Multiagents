@@ -72,9 +72,9 @@ function AccommodationSummary({ data }) {
   );
 }
 
-const STEP_LABELS = ["Vuelos", "Transporte", "Actividades", "Alojamiento"];
-const STEP_ICONS = ["✈️", "🚗", "🎯", "🏠"];
-const RENDERERS = [FlightSummary, TransportSummary, ActivitiesSummary, AccommodationSummary];
+const STEP_LABELS = ["Vuelos", "Itinerario", "Alojamiento", "Transporte"];
+const STEP_ICONS = ["✈️", "🗺️", "🏠", "🚗"];
+const RENDERERS = [FlightSummary, ActivitiesSummary, AccommodationSummary, TransportSummary];
 
 export default function TripSummaryBar({ stepResults, stepStates }) {
   const [expanded, setExpanded] = useState(false);
@@ -115,7 +115,7 @@ export default function TripSummaryBar({ stepResults, stepStates }) {
 
             return (
               <div key={i} className={`rounded-lg p-2.5 ${isDone ? "bg-green-50 border border-green-200" : "bg-gray-50 border border-gray-100"}`}>
-                {isDone && data ? (
+                {isDone && data && Renderer ? (
                   <Renderer data={data} />
                 ) : isDone ? (
                   <div className="flex items-center gap-2">

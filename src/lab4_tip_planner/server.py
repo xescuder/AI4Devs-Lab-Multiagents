@@ -32,7 +32,7 @@ load_dotenv()
 
 app = FastAPI(title="Agencia de Viajes Inteligente")
 
-STEPS = ["flight", "transport", "activities", "accommodation"]
+STEPS = ["flight", "activities", "accommodation", "transport"]
 
 
 # ---------------------------------------------------------------------------
@@ -50,6 +50,60 @@ def check_env():
     if not os.getenv("SERPER_API_KEY"):
         errors.append("SERPER_API_KEY no configurada — sin imágenes de alojamientos.")
     return {"errors": errors, "ok": len([e for e in errors if "API_KEY" not in e or "SERPER" in e]) == 0}
+
+
+# ---------------------------------------------------------------------------
+# Natural language trip parsing
+# ---------------------------------------------------------------------------
+
+PARSE_PROMPT = """Extract travel details from the user's description and return a JSON object.
+If a field is not mentioned, use a reasonable default.
+
+Required fields:
+- pais_origen: origin city/country (default: "Madrid")
+- pais_destino: destination city/country
+- numero_adultos: number of adults (default: "2")
+- numero_dias: number of days (calculate from dates if given)
+- fecha_ida: departure date YYYY-MM-DD (default: 2 weeks from today)
+- fecha_vuelta: return date YYYY-MM-DD
+- flexibilidad_dias: date flexibility in days (default: "3")
+- tipo_vuelo: "solo vuelos directos" or "vuelos directos o con máximo 1 escala"
+- presupuesto_max_noche: max budget per night in EUR (default: "120")
+
+Return ONLY valid JSON, no other text.
+
+User description: {description}"""
+
+
+@app.post("/api/parse-trip")
+async def parse_trip(body: dict):
+    description = body.get("description", "")
+    if not description.strip():
+        return {"error": "Descripción vacía"}
+
+    try:
+        from openai import OpenAI
+
+        client = OpenAI()
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": PARSE_PROMPT.format(description=description)}],
+            response_format={"type": "json_object"},
+            temperature=0,
+        )
+        result = json.loads(response.choices[0].message.content)
+
+        if "pais_destino" not in result or not result["pais_destino"]:
+            return {"error": "No se pudo identificar el destino del viaje."}
+
+        for key in ["numero_adultos", "numero_dias", "flexibilidad_dias", "presupuesto_max_noche"]:
+            if key in result:
+                result[key] = str(result[key])
+
+        return result
+
+    except Exception as e:
+        return {"error": f"Error al interpretar: {str(e)}"}
 
 
 # ---------------------------------------------------------------------------
@@ -81,6 +135,9 @@ class WebSocketHumanInputProvider:
 
         if not feedback.strip() or feedback.strip().lower() in ("ok", "aprobado", "sí", "si", "yes"):
             context.ask_for_human_input = False
+            next_step = min(step_idx + 1, len(STEPS) - 1)
+            if step_idx < len(STEPS) - 1:
+                self._send({"type": "working", "step": next_step})
             return formatted_answer
 
         self._send({"type": "chat", "role": "user", "content": feedback})
@@ -106,9 +163,11 @@ class WebSocketHumanInputProvider:
 
 AGENT_STEP_MAP = {
     "Especialista en Vuelos Internacionales": 0,
-    "Coordinador de Logística y Transporte Terrestre": 1,
-    "Planificador de Actividades y Experiencias Locales": 2,
-    "Curador de Alojamientos y Estancias Locales": 3,
+    "Investigador de Itinerarios de Viaje": 1,
+    "Curador de Experiencias Imprescindibles": 1,
+    "Planificador de Rutas con Timetable y Mapa": 1,
+    "Curador de Alojamientos y Estancias Locales": 2,
+    "Coordinador de Logística y Transporte Terrestre": 3,
 }
 
 

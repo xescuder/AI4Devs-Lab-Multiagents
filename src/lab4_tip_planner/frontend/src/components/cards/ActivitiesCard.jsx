@@ -29,15 +29,9 @@ function ActivityRow({ activity, type, checked, onToggle }) {
         onChange={onToggle}
         className="mt-1 w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
       />
-      {activity.image_url && (
-        <div className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-          <img src={activity.image_url} alt={activity.name} className="w-full h-full object-cover"
-            onError={(e) => { e.target.onerror = null; e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-lg text-gray-300">📍</div>'; }} />
-        </div>
-      )}
       <TimeSlot time={activity.start_time} duration={activity.duration_minutes} />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={`font-medium text-sm ${checked ? "text-gray-800" : "text-gray-400 line-through"}`}>
             {activity.name}
           </span>
@@ -46,19 +40,104 @@ function ActivityRow({ activity, type, checked, onToggle }) {
           }`}>
             {isFree ? "Gratis" : `${activity.price_per_person}€/pers`}
           </span>
+          {activity.scoring && (
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+              activity.scoring.total_score >= 40 ? "bg-yellow-100 text-yellow-700" :
+              activity.scoring.total_score >= 30 ? "bg-blue-100 text-blue-700" :
+              "bg-gray-100 text-gray-500"
+            }`}>
+              ⭐ {activity.scoring.total_score}/50
+            </span>
+          )}
+          {activity.must_see && (
+            <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium">
+              🔥 Imprescindible
+            </span>
+          )}
         </div>
         <p className="text-xs text-gray-500 mt-0.5">{activity.description}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          {activity.lat && activity.lng ? (
+            <button onClick={(e) => {
+                e.stopPropagation();
+                window.open(`https://www.google.com/maps?q=${activity.lat},${activity.lng}`, "map_preview", "width=600,height=500,scrollbars=yes,resizable=yes");
+              }}
+              className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+              📍 {activity.location || "Ver en mapa"}
+            </button>
+          ) : activity.location ? (
+            <span className="text-[10px] text-gray-400">📍 {activity.location}</span>
+          ) : null}
+          {activity.walking_time_minutes > 0 && (
+            <span className="text-[10px] text-teal-600">🚶 {activity.walking_time_minutes}min caminando</span>
+          )}
+        </div>
         {activity.tip && <p className="text-xs text-indigo-500 mt-0.5">💡 {activity.tip}</p>}
+        {activity.booking_url && checked && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(activity.booking_url, "booking_preview", "width=600,height=750,scrollbars=yes,resizable=yes");
+            }}
+            title={activity.booking_url}
+            className="text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-700 font-medium px-2 py-0.5 rounded-full transition mt-1 inline-block">
+            🎟️ Comprar entrada
+          </button>
+        )}
+        {activity.free_alternative && !checked && (
+          <div className="mt-1 bg-green-50 border border-green-200 rounded-lg px-2 py-1">
+            <p className="text-[10px] text-green-700 font-medium">🔄 Alternativa gratuita:</p>
+            <p className="text-[10px] text-green-600">{activity.free_alternative.name} — {activity.free_alternative.description}</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function DayTimetable({ day, selections, onToggle }) {
+function DriveSegment({ drive }) {
+  const mapsUrl = drive.from_lat && drive.to_lat
+    ? `https://www.google.com/maps/dir/${drive.from_lat},${drive.from_lng}/${drive.to_lat},${drive.to_lng}`
+    : null;
+
+  return (
+    <div className="flex items-center gap-2 py-2 px-3 bg-blue-50 rounded-lg border border-blue-100">
+      <span className="text-lg">🚗</span>
+      <TimeSlot time={drive.start_time} duration={drive.duration_minutes} />
+      <div className="flex-1 min-w-0">
+        {mapsUrl ? (
+          <button onClick={() => window.open(mapsUrl, "drive_map", "width=700,height=500,scrollbars=yes,resizable=yes")}
+            className="text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline cursor-pointer text-left">
+            {drive.from} → {drive.to} 🗺️
+          </button>
+        ) : (
+          <p className="text-xs font-medium text-blue-700">{drive.from} → {drive.to}</p>
+        )}
+        <p className="text-[10px] text-blue-500">
+          {drive.distance_km} km · {formatDuration(drive.duration_minutes)} en coche
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function getDayDate(startDate, dayNum) {
+  if (!startDate) return null;
+  try {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + dayNum - 1);
+    return d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
+  } catch { return null; }
+}
+
+function DayTimetable({ day, selections, onToggle, startDate }) {
+  const drives = day.drives || [];
   const allActivities = [
     ...(day.free_activities || []).map((a) => ({ ...a, _type: "free" })),
     ...(day.paid_activities || []).map((a) => ({ ...a, _type: "paid" })),
   ].sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""));
+
+  const totalDriving = drives.reduce((s, d) => s + (d.duration_minutes || 0), 0);
 
   const selectedActs = allActivities.filter((_, i) => selections[i] !== false);
   const totalMinutes = selectedActs.reduce((s, a) => s + (a.duration_minutes || 0), 0);
@@ -76,40 +155,70 @@ function DayTimetable({ day, selections, onToggle }) {
       }`}>
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full">
-            Día {day.day}
+            {startDate ? getDayDate(startDate, day.day) : `Día ${day.day}`}
           </span>
           <span className="font-semibold text-gray-800 text-sm">{day.title}</span>
           {day.type === "rest" && <span className="text-xs text-green-600">🌿 Descanso</span>}
         </div>
         <div className="flex items-center gap-3 text-xs text-gray-500">
+          {totalDriving > 0 && <span>🚗 {formatDuration(totalDriving)}</span>}
           <span>⏱ {formatDuration(totalMinutes)}</span>
           {totalCost > 0 && <span className="text-amber-600 font-medium">{totalCost}€/pers</span>}
         </div>
       </div>
 
-      {/* Activities */}
-      {allActivities.length > 0 ? (
-        <div className="divide-y divide-gray-100 px-2 py-1">
-          {allActivities.map((act, i) => (
-            <ActivityRow
-              key={i}
-              activity={act}
-              type={act._type}
-              checked={selections[i] !== false}
-              onToggle={() => onToggle(day.day, i)}
-            />
-          ))}
+      {/* Drives + Activities interleaved by start_time */}
+      {(allActivities.length > 0 || drives.length > 0) ? (
+        <div className="space-y-1 px-2 py-1">
+          {(() => {
+            const timeline = [
+              ...drives.map((d) => ({ ...d, _kind: "drive", _time: d.start_time || "" })),
+              ...allActivities.map((a, i) => ({ ...a, _kind: "activity", _idx: i, _time: a.start_time || "" })),
+            ].sort((a, b) => a._time.localeCompare(b._time));
+
+            return timeline.map((item, ti) => {
+              if (item._kind === "drive") {
+                return <DriveSegment key={`drive-${ti}`} drive={item} />;
+              }
+              return (
+                <ActivityRow
+                  key={`act-${ti}`}
+                  activity={item}
+                  type={item._type}
+                  checked={selections[item._idx] !== false}
+                  onToggle={() => onToggle(day.day, item._idx)}
+                />
+              );
+            });
+          })()}
         </div>
       ) : (
         <div className="px-4 py-4 text-sm text-gray-500 italic">
           Día libre para explorar por tu cuenta
         </div>
       )}
+
+      {/* Overnight location — at the end of the day */}
+      {(day.overnight_zone || day.end_city) && (
+        <div className="mx-3 mb-3 mt-2 flex items-center gap-2 bg-indigo-900 text-white rounded-lg px-4 py-2.5">
+          <span className="text-lg">🌙</span>
+          <div>
+            <span className="text-sm font-medium">
+              Pernocta en {day.overnight_zone || day.end_city}
+            </span>
+            {day.start_city && day.end_city && day.start_city !== day.end_city && (
+              <span className="text-xs text-indigo-300 block">
+                Ruta del día: {day.start_city} → {day.end_city}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export default function ActivitiesCard({ data, selections, onToggle }) {
+export default function ActivitiesCard({ data, selections, onToggle, startDate }) {
   const [activeDay, setActiveDay] = useState(0);
 
   if (!data || !data.days) return null;
@@ -154,7 +263,7 @@ export default function ActivitiesCard({ data, selections, onToggle }) {
                 ? "bg-green-50 text-green-600 hover:bg-green-100"
                 : "bg-gray-100 text-gray-500 hover:bg-gray-200"
             }`}>
-            Día {day.day}{day.type === "rest" ? " 🌿" : ""}
+            {startDate ? getDayDate(startDate, day.day) : `Día ${day.day}`}{day.type === "rest" ? " 🌿" : ""}
           </button>
         ))}
       </div>
@@ -165,30 +274,66 @@ export default function ActivitiesCard({ data, selections, onToggle }) {
           day={data.days[activeDay]}
           selections={selections[data.days[activeDay].day] || {}}
           onToggle={onToggle}
+          startDate={startDate}
         />
       )}
 
+      {/* Source blogs */}
+      {data.source_blogs && data.source_blogs.length > 0 && (
+        <div className="bg-gray-50 rounded-lg px-4 py-2 text-xs text-gray-500">
+          <span className="font-medium">📚 Basado en: </span>
+          {data.source_blogs.map((url, i) => (
+            <span key={i}>
+              <button
+                onClick={() => window.open(url, "blog_preview", "width=700,height=800,scrollbars=yes,resizable=yes")}
+                title={url}
+                className="text-indigo-500 hover:text-indigo-700 hover:underline cursor-pointer">
+                Blog {i + 1}
+              </button>
+              {i < data.source_blogs.length - 1 && ", "}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Totals */}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        {data.total_free_time_hours != null && (
-          <div className="bg-green-50 rounded-lg py-2">
-            <p className="text-xs text-green-600">Visitas gratis</p>
-            <p className="font-bold text-green-700">{data.total_free_time_hours}h</p>
+      {(() => {
+        const t = data.totals || {};
+        return (
+          <div className="grid grid-cols-5 gap-2 text-center">
+            {t.driving_hours != null && (
+              <div className="bg-blue-50 rounded-lg py-2">
+                <p className="text-xs text-blue-600">🚗 Conducción</p>
+                <p className="font-bold text-blue-700">{t.driving_hours}h</p>
+              </div>
+            )}
+            {t.walking_hours != null && (
+              <div className="bg-teal-50 rounded-lg py-2">
+                <p className="text-xs text-teal-600">🚶 Caminando</p>
+                <p className="font-bold text-teal-700">{t.walking_hours}h</p>
+              </div>
+            )}
+            {(t.free_time_hours != null || data.total_free_time_hours != null) && (
+              <div className="bg-green-50 rounded-lg py-2">
+                <p className="text-xs text-green-600">Gratis</p>
+                <p className="font-bold text-green-700">{t.free_time_hours || data.total_free_time_hours}h</p>
+              </div>
+            )}
+            {(t.paid_time_hours != null || data.total_paid_time_hours != null) && (
+              <div className="bg-amber-50 rounded-lg py-2">
+                <p className="text-xs text-amber-600">De pago</p>
+                <p className="font-bold text-amber-700">{t.paid_time_hours || data.total_paid_time_hours}h</p>
+              </div>
+            )}
+            {(t.budget_per_person != null || data.total_budget_per_person != null) && (
+              <div className="bg-indigo-50 rounded-lg py-2">
+                <p className="text-xs text-indigo-600">Presupuesto</p>
+                <p className="font-bold text-indigo-700">{t.budget_per_person || data.total_budget_per_person}€</p>
+              </div>
+            )}
           </div>
-        )}
-        {data.total_paid_time_hours != null && (
-          <div className="bg-amber-50 rounded-lg py-2">
-            <p className="text-xs text-amber-600">Actividades pago</p>
-            <p className="font-bold text-amber-700">{data.total_paid_time_hours}h</p>
-          </div>
-        )}
-        {data.total_budget_per_person != null && (
-          <div className="bg-indigo-50 rounded-lg py-2">
-            <p className="text-xs text-indigo-600">Presupuesto total</p>
-            <p className="font-bold text-indigo-700">{data.total_budget_per_person}€/pers</p>
-          </div>
-        )}
-      </div>
+        );
+      })()}
     </div>
   );
 }

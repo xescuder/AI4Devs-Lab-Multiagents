@@ -1,6 +1,15 @@
 import { useState } from "react";
 
-export default function AccommodationCard({ data, totalNights, selected, onSelect }) {
+function getNightDate(startDate, nightNum) {
+  if (!startDate) return null;
+  try {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + nightNum - 1);
+    return d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
+  } catch { return null; }
+}
+
+export default function AccommodationCard({ data, totalNights, selected, onSelect, startDate }) {
   const [activeNight, setActiveNight] = useState(0);
 
   const numNights = totalNights || data?.nights?.length || 1;
@@ -33,7 +42,7 @@ export default function AccommodationCard({ data, totalNights, selected, onSelec
                 }`}>
                 <span className="flex items-center gap-1">
                   {!isLoaded && <span className="inline-block w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />}
-                  Noche {i + 1}
+                  {startDate ? getNightDate(startDate, i + 1) : `Noche ${i + 1}`}
                 </span>
                 {isLoaded && night.city && (
                   <span className="block text-[10px] opacity-70">{night.city}</span>
@@ -83,20 +92,26 @@ export default function AccommodationCard({ data, totalNights, selected, onSelec
                     isSelected ? "border-indigo-500 bg-indigo-50/60 shadow-md" : "border-gray-200 bg-white hover:border-gray-300"
                   }`}>
                   <div className="flex gap-4">
-                    <div className="w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                    <div className="w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 relative">
                       {(opt.image_url || opt.image) ? (
                         <img
                           src={opt.image_url || opt.image}
                           alt={opt.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-3xl text-gray-300">🏠</div>';
+                            e.target.style.display = "none";
+                            e.target.nextSibling.style.display = "flex";
                           }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl text-gray-300">🏠</div>
-                      )}
+                      ) : null}
+                      <div className={`w-full h-full items-center justify-center flex-col ${(opt.image_url || opt.image) ? "hidden" : "flex"}`}>
+                        <span className="text-2xl">
+                          {opt.name?.toLowerCase().includes("casa") || opt.name?.toLowerCase().includes("cabaña") ? "🏡"
+                          : opt.name?.toLowerCase().includes("estudio") || opt.name?.toLowerCase().includes("loft") ? "🏢"
+                          : "🏠"}
+                        </span>
+                        <span className="text-[9px] text-gray-400 mt-0.5">Sin imagen</span>
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
@@ -109,6 +124,14 @@ export default function AccommodationCard({ data, totalNights, selected, onSelec
                         <Radio checked={isSelected} />
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">📍 {opt.neighborhood}</p>
+                      <div className="flex gap-1.5 mt-1">
+                        {opt.private_bathroom && (
+                          <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">🚿 Baño privado</span>
+                        )}
+                        {opt.kitchen && (
+                          <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">🍳 Cocina</span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 mt-1">{opt.description}</p>
                       <div className="flex items-center gap-3 mt-2">
                         <span className="text-lg font-bold text-indigo-600">{opt.price}€<span className="text-xs text-gray-400 font-normal">/noche</span></span>

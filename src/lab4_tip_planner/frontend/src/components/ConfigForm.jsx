@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+const STORAGE_KEY = "trip_planner_form";
+
+function loadSaved() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return null;
+}
 
 export default function ConfigForm({ onStart }) {
   const today = new Date();
   const defaultStart = new Date(today.getTime() + 14 * 86400000).toISOString().slice(0, 10);
   const defaultEnd = new Date(today.getTime() + 20 * 86400000).toISOString().slice(0, 10);
 
-  const [form, setForm] = useState({
+  const defaults = {
     pais_origen: "",
     pais_destino: "",
     numero_adultos: "2",
@@ -13,8 +23,17 @@ export default function ConfigForm({ onStart }) {
     fecha_vuelta: defaultEnd,
     flexibilidad_dias: "3",
     tipo_vuelo: "solo vuelos directos",
+    hora_max_salida: "12:00",
     presupuesto_max_noche: "120",
-  });
+    alojamiento_bano_privado: true,
+    alojamiento_cocina: true,
+  };
+
+  const [form, setForm] = useState(() => ({ ...defaults, ...loadSaved() }));
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
+  }, [form]);
 
   const update = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -22,19 +41,14 @@ export default function ConfigForm({ onStart }) {
     e.preventDefault();
     const d1 = new Date(form.fecha_ida);
     const d2 = new Date(form.fecha_vuelta);
-    const dias = Math.ceil((d2 - d1) / 86400000) + 1;
-    onStart({ ...form, numero_dias: String(dias) });
+    const noches = Math.ceil((d2 - d1) / 86400000);
+    const dias = noches + 1;
+    const horaNum = parseInt(form.hora_max_salida.split(":")[0]) || 0;
+    onStart({ ...form, numero_dias: String(dias), numero_noches: String(noches), hora_max_salida_num: String(horaNum) });
   };
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          🌍 Agencia de Viajes Inteligente
-        </h1>
-        <p className="text-gray-500 mt-2">4 agentes de IA especializados planifican tu viaje perfecto</p>
-      </div>
-
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
         <h2 className="text-xl font-semibold text-gray-800">⚙️ Configura tu viaje</h2>
 
@@ -106,6 +120,38 @@ export default function ConfigForm({ onStart }) {
                 {label}
               </label>
             ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            🕐 Hora máxima de salida (ida)
+          </label>
+          <input type="time"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition"
+            value={form.hora_max_salida} onChange={(e) => update("hora_max_salida", e.target.value)} />
+          <p className="text-xs text-gray-400 mt-1">Solo vuelos de ida que salgan antes de esta hora</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">🏠 Requisitos del alojamiento</label>
+          <div className="flex gap-4">
+            <label className={`flex-1 cursor-pointer flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
+              form.alojamiento_bano_privado ? "border-indigo-500 bg-indigo-50" : "border-gray-200"
+            }`}>
+              <input type="checkbox" checked={form.alojamiento_bano_privado}
+                onChange={(e) => update("alojamiento_bano_privado", e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600" />
+              <span className="text-sm">🚿 Baño privado</span>
+            </label>
+            <label className={`flex-1 cursor-pointer flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
+              form.alojamiento_cocina ? "border-indigo-500 bg-indigo-50" : "border-gray-200"
+            }`}>
+              <input type="checkbox" checked={form.alojamiento_cocina}
+                onChange={(e) => update("alojamiento_cocina", e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600" />
+              <span className="text-sm">🍳 Cocina</span>
+            </label>
           </div>
         </div>
 

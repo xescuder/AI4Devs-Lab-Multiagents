@@ -29,7 +29,19 @@ export default function TransportCard({ option, selected, onSelect }) {
           <span className="text-2xl font-bold text-indigo-600">{option.price_per_day}€</span>
           <span className="text-sm text-gray-500 ml-1">/día</span>
         </div>
-        <span className="text-sm text-gray-500">Total: <strong>{option.price_total}€</strong></span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">Total: <strong>{option.price_total}€</strong></span>
+          {option.kayak_url && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(option.kayak_url, "car_preview", "width=550,height=750,scrollbars=yes,resizable=yes");
+              }}
+              className="text-xs bg-sky-100 hover:bg-sky-200 text-sky-700 font-medium px-2.5 py-1 rounded-full transition">
+              🔍 Ver en Kayak
+            </button>
+          )}
+        </div>
       </div>
 
       {option.reason && <p className="text-xs text-gray-500 mt-2 italic">{option.reason}</p>}

@@ -1,0 +1,26 @@
+research_task:
+  description: >
+    Analiza el destino {destination} para un viaje de {number_of_days} días enfocado únicamente en la exploración y actividades.
+    
+    Aplica estrictamente las siguientes reglas para esta investigación:
+    1. Filtra y selecciona exclusivamente puntos de interés (monumentos, museos, plazas, parques nacionales, playas, lagos, miradores) y actividades prácticas (tours, caminatas, senderismo, experiencias).
+    2. Queda PROHIBIDO incluir recomendaciones gastronómicas, restaurantes, hoteles, datos históricos densos o costumbres culturales.
+    3. Si {destination} es un PAÍS: Analiza de forma lógica cuántos puntos, regiones o ciudades es viable visitar en {number_of_days} días. Diseña una ruta realista donde el traslado no consuma las vacaciones (pocos días = una sola zona; muchos días = ruta multipunto fluida).
+    4. Si {destination} es una CIUDAD o ENTORNO NATURAL específico y los días son altos (más de 3 o 4 días): Agrega actividades o excursiones de un día (day-trips) a pueblos, reservas naturales o atracciones muy próximas.
+  expected_output: >
+    Un informe técnico y estructurado en español que contenga única y exclusivamente la selección óptima de atracciones y actividades recomendadas, distribuidas geográficamente por zonas o días tentativos.
+  agent: destination_analyst
+
+itinerary_task:
+  description: >
+    Toma el informe de atracciones y actividades proporcionado por el investigador y construye el itinerario definitivo para {number_of_days} días en {destination}.
+    
+    Reglas de diseño del itinerario:
+    1. Debe estar estructurado de forma estrictamente cronológica para cada día (Mañana, Tarde, Noche).
+    2. Maximiza la eficiencia geográfica: agrupa las actividades de manera que se realicen en la misma zona cada día, minimizando los tiempos de transporte. Si hay excursiones a los alrededores, asígnales un bloque o día completo aclarando el trayecto.
+    3. Omite por completo cualquier espacio o recomendación de comida, desayuno o cena. El itinerario debe ser una guía de acción directa de qué ver y qué hacer.
+  expected_output: >
+    Un itinerario limpio y detallado en formato Markdown, escrito completamente en español, estructurado día a día y enfocado al 100% en el flujo cronológico de visitas y actividades.
+  agent: itinerary_designer
+  context:
+    - research_task

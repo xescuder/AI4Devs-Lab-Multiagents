@@ -1,0 +1,576 @@
+flight_search_task:
+  description: >
+    Busca las mejores opciones de vuelo de ida y vuelta desde {pais_origen}
+    hasta {pais_destino} para {numero_adultos} adulto(s).
+
+    FECHAS:
+    - Ida preferida: {fecha_ida}
+    - Vuelta preferida: {fecha_vuelta}
+    - Flexibilidad: ±{flexibilidad_dias} días (puedes buscar vuelos más baratos
+      dentro de este margen de fechas)
+
+    RESTRICCIÓN DE ESCALAS: {tipo_vuelo}.
+    Si solo se permiten vuelos directos, NO propongas vuelos con escala.
+    Si se permite hasta 1 escala, puedes incluir opciones con máximo 1 escala.
+
+    PREFERENCIA HORARIA: El usuario prefiere vuelos de IDA con salida antes
+    de las {hora_max_salida} hora local del origen.
+    - Si HAY vuelos directos antes de esa hora, muestra solo esos.
+    - Si NO HAY vuelos directos antes de esa hora, informa al usuario
+      y muestra los vuelos directos disponibles indicando claramente
+      que no cumplen la preferencia horaria.
+
+    INSTRUCCIONES:
+    1. Usa la herramienta "Kayak flight crawl" para buscar vuelos reales.
+       Parámetros: departure (código IATA, ej: "BCN"), destination (código IATA, ej: "KEF"),
+       date (YYYY-MM-DD), return_date (YYYY-MM-DD), adults (número),
+       direct_only (true/false), max_departure_hour (número, ej: 12 para antes de las 12:00).
+    2. IMPORTANTE: Usa max_departure_hour={hora_max_salida_num} para filtrar.
+    3. Haz MÁXIMO 2 búsquedas para no tardar demasiado:
+       - Primera: con las fechas preferidas ({fecha_ida} / {fecha_vuelta})
+       - Segunda: solo si los resultados son caros o no hay directos,
+         prueba con 2-3 días antes o después.
+    4. Usa SOLO los precios que aparecen en los resultados de Kayak. NO inventes.
+    5. Selecciona las mejores opciones de los resultados.
+    6. Incluye la URL de Kayak devuelta en cada opción.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional ni markdown.
+  expected_output: >
+    {
+      "options": [
+        {
+          "airline": "Nombre aerolínea",
+          "outbound": {
+            "date": "YYYY-MM-DD",
+            "departure": "HH:MM",
+            "arrival": "HH:MM",
+            "route": "Ciudad → Ciudad",
+            "stops": "Directo" o "1 escala en Ciudad (Xh)",
+            "duration": "Xh Xm"
+          },
+          "return": {
+            "date": "YYYY-MM-DD",
+            "departure": "HH:MM",
+            "arrival": "HH:MM",
+            "route": "Ciudad → Ciudad",
+            "stops": "Directo" o "1 escala en Ciudad (Xh)",
+            "duration": "Xh Xm"
+          },
+          "price_per_person": 000,
+          "price_total": 000,
+          "baggage": "Incluida" o "No incluida" o "Solo equipaje de mano",
+          "rentalcars_url": "URL de Rentalcars devuelta por la herramienta",
+          "recommended": true/false,
+          "reason": "Por qué es buena o mala opción"
+        }
+      ],
+      "notes": "Notas sobre fechas o disponibilidad si aplica"
+    }
+  human_input: true
+
+transport_search_task:
+  description: >
+    Busca las mejores opciones de alquiler de coche en {pais_destino}.
+
+    IMPORTANTE: Ten en cuenta los horarios de vuelo aprobados en el paso anterior.
+    - Si el vuelo de ida llega tarde, la recogida del coche debe ser al día siguiente
+      o en el aeropuerto a la hora de llegada.
+    - Si el vuelo de vuelta sale temprano, la devolución debe ser la noche anterior
+      o en el aeropuerto antes del vuelo.
+    - Ajusta las fechas de recogida/devolución en consecuencia.
+
+    INSTRUCCIONES:
+    1. Usa la herramienta "Rentalcars search" para buscar coches reales.
+       Parámetros: location (ciudad o aeropuerto, ej: "Keflavik Airport"),
+       pickup_date (YYYY-MM-DD), return_date (YYYY-MM-DD).
+    2. La herramienta busca precios reales en Rentalcars.com via Google.
+    3. IMPORTANTE: Usa SOLO los precios que aparecen en los resultados.
+       NO inventes precios.
+    4. Selecciona las 3 mejores opciones de los resultados.
+    5. Incluye la URL de Rentalcars devuelta en cada opción ("rentalcars_url").
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional ni markdown.
+  expected_output: >
+    {
+      "options": [
+        {
+          "company": "Nombre empresa",
+          "category": "Económico/Compacto/SUV/etc.",
+          "model": "Modelo ejemplo",
+          "fuel_policy": "Full-to-full / Prepago",
+          "insurance": "Tipo de cobertura incluida",
+          "price_per_day": 00,
+          "price_total": 000,
+          "deposit": "Depósito estimado",
+          "rentalcars_url": "URL de Rentalcars devuelta por la herramienta",
+          "recommended": true/false,
+          "reason": "Por qué esta opción destaca"
+        }
+      ],
+      "notes": "Requisitos de licencia, política de cancelación, etc."
+    }
+  human_input: true
+
+blog_search_task:
+  description: >
+    Busca los 10 mejores blogs con itinerarios de {numero_dias} días en
+    {pais_destino}. El viaje es del {fecha_ida} al {fecha_vuelta}
+    ({numero_dias} días contando ida y vuelta).
+
+    Prioriza blogs populares con rutas día a día detalladas.
+
+    INSTRUCCIONES:
+    1. Usa "Itinerary blog search" con destination={pais_destino} y days={numero_dias}.
+       Busca itinerarios de exactamente {numero_dias} días (o ±1 día si no hay
+       resultados exactos).
+    2. SOLO blogs en ESPAÑOL. Descarta cualquier resultado en inglés u otro idioma.
+    3. SOLO blogs publicados en 2024, 2025 o 2026. Descarta blogs más antiguos.
+    4. DESCARTA URLs de redes sociales (facebook.com, instagram.com, twitter.com,
+       tiktok.com, youtube.com). Solo blogs/webs con artículos detallados.
+    5. Prioriza blogs largos con información detallada día a día: horarios,
+       distancias, recomendaciones específicas, fotos del viaje real.
+    6. De los resultados, selecciona los 10 blogs más relevantes y recientes.
+    7. Ordena por calidad del contenido (los más detallados primero).
+    8. Para cada blog incluye: título, URL, descripción, y año de publicación.
+    9. Prioriza blogs que cubran rutas en coche si el destino lo requiere.
+
+    FORMATO: Responde SOLO con un JSON válido.
+  expected_output: >
+    {
+      "blogs": [
+        {
+          "title": "Título del artículo/blog",
+          "url": "URL completa",
+          "description": "Breve resumen de qué cubre (1-2 frases)",
+          "year": 2025,
+          "highlights": "Qué hace especial este itinerario"
+        }
+      ]
+    }
+  human_input: true
+
+blog_read_task:
+  description: >
+    Busca y lee los mejores blogs con itinerarios de {numero_dias} días
+    en {pais_destino} (viaje del {fecha_ida} al {fecha_vuelta}).
+
+    INSTRUCCIONES:
+    1. Usa "Itinerary blog search" con destination={pais_destino} y days={numero_dias}
+       para encontrar blogs con itinerarios detallados en español.
+    2. De los resultados, selecciona los 2 MEJORES blogs que cumplan TODOS estos criterios:
+       - Itinerario COMPLETO de {numero_dias} días (o ±1 día) con desglose día a día
+       - Artículo de blog personal o revista de viajes (NO foros, NO redes sociales)
+       - Contenido detallado con rutas, tiempos, recomendaciones
+       - Publicado en 2024, 2025 o 2026
+       DESCARTA blogs que no sean itinerarios completos del mismo número de días.
+    3. Usa "Blog crawl" para leer el contenido completo de CADA blog seleccionado.
+       La herramienta devuelve el texto + las imágenes del blog.
+    4. Si se proporcionan archivos PDF ({pdf_file_paths}), usa "PDF content extract"
+       para cada archivo. Extrae las mismas categorías de información que de
+       los blogs (actividades, tiempos, precios, zonas). Incluye los PDFs como
+       fuentes adicionales en "blogs_read" con el nombre del archivo en vez de URL.
+    5. Extrae: nombre del lugar, descripción breve (1 frase), tiempo estimado,
+       precio, zona/región, día sugerido.
+    6. Máximo 10 actividades por blog/PDF. Prioriza las más relevantes.
+    7. Organiza por blog/PDF y día. NO incluyas image_url.
+
+    FORMATO: Responde SOLO con JSON válido.
+  expected_output: >
+    {
+      "blogs_read": [
+        {
+          "url": "URL del blog",
+          "activities_found": [
+            {
+              "name": "Nombre del lugar",
+              "description": "Qué se hace ahí (1 frase)",
+              "day_suggested": 1,
+              "duration_minutes": 90,
+              "price_per_person": 0,
+              "zone": "Zona/región"
+            }
+          ]
+        }
+      ]
+    }
+  human_input: false
+
+experience_curate_task:
+  description: >
+    Analiza TODAS las actividades extraídas de los blogs y asigna un
+    SCORING a cada una para determinar cuáles son imprescindibles.
+
+    CRITERIOS DE SCORING (cada uno de 0 a 10):
+    1. "popularity": En cuántos blogs aparece mencionada (más blogs = más popular)
+    2. "uniqueness": Qué tan única es esta experiencia en {pais_destino}
+       (algo que solo puedes hacer aquí = 10, algo genérico = 2)
+    3. "quality_reviews": Calidad según las descripciones de los blogs
+       (los bloggers la describen con entusiasmo = 10, mención de paso = 3)
+    4. "accessibility": Facilidad de acceso en coche + a pie
+       (acceso fácil = 10, requiere horas de trek = 3)
+    5. "season_fit": Adecuación a la época del año ({fecha_ida} a {fecha_vuelta})
+       (ideal para esa estación = 10, mejor en otra época = 3)
+
+    El "total_score" es la suma de los 5 criterios (máx 50).
+
+    INSTRUCCIONES:
+    1. Elimina duplicados (mismo lugar en varios blogs) y cuenta menciones.
+    2. Asigna score a CADA actividad en los 5 criterios.
+    3. Ordena por total_score descendente.
+    4. Agrupa por zona geográfica.
+    5. Separa en gratuitas y de pago.
+    6. Usa "Activities search" para verificar precios actuales de las de pago.
+    7. Marca las top actividades como "must_see": true (score >= 35).
+
+    FORMATO: Responde SOLO con JSON válido.
+  expected_output: >
+    {
+      "scored_activities": [
+        {
+          "name": "Nombre",
+          "zone": "Zona",
+          "type": "free/paid",
+          "duration_minutes": 90,
+          "price_per_person": 0,
+          "scoring": {
+            "popularity": 8,
+            "uniqueness": 9,
+            "quality_reviews": 7,
+            "accessibility": 8,
+            "season_fit": 9,
+            "total_score": 41
+          },
+          "mentioned_in_blogs": 3,
+          "must_see": true,
+          "best_day": 1,
+          "best_time": "morning/afternoon",
+          "reason": "Por qué esta actividad destaca (1 frase)"
+        }
+      ],
+      "total_scored": 25,
+      "must_see_count": 12,
+      "total_free": 15,
+      "total_paid": 10
+    }
+  human_input: false
+
+route_plan_task:
+  description: >
+    Organiza las actividades en un itinerario en {pais_destino} con timetable y drives.
+
+    FECHAS: Usa las del VUELO APROBADO (contexto), no las del formulario.
+    Genera un día para CADA día del viaje (ida a vuelta INCLUSIVE).
+    Días con pocas horas: type="arrival" o type="departure".
+
+    RESTRICCIONES HORARIAS:
+    - Primer día: primera actividad = hora llegada vuelo + 2h. Si es >20:00 → solo llegada.
+    - Último día: última actividad termina antes de hora vuelo − 3.5h − drive al aeropuerto.
+    - Época: {fecha_ida} a {fecha_vuelta}. Considera clima y estacionalidad.
+
+    CURACIÓN: Elimina duplicados entre blogs, prioriza los más mencionados y únicos.
+    Marca "must_see": true las imprescindibles.
+
+    REGLAS:
+    1. 6-10 actividades/día activo (08:00-21:00). Si faltan, añade miradores, pueblos, paradas.
+    2. Tiempos REALISTAS. Horarios de apertura para actividades de pago (09:00-18:00 por defecto).
+    3. Paradas para comer (~1h almuerzo). Agrupar por proximidad geográfica.
+    4. Drives con coordenadas GPS entre CADA punto, intercalados cronológicamente.
+    5. NO incluyas image_url. Para pago: incluir booking_url y free_alternative.
+    6. end_city de un día = start_city del siguiente.
+    7. Cada día necesita: start_city, end_city, overnight_zone (para buscar alojamiento).
+
+    FORMATO: Responde SOLO con JSON válido.
+  expected_output: >
+    {
+      "source_blogs": ["url1", "url2"],
+      "days": [
+        {
+          "day": 1,
+          "title": "Título temático",
+          "type": "active",
+          "start_city": "Ciudad donde se empieza el día",
+          "end_city": "Ciudad donde se pernocta",
+          "overnight_zone": "Zona específica para buscar alojamiento",
+          "overnight_lat": 64.1,
+          "overnight_lng": -21.9,
+          "drives": [
+            {
+              "from": "Origen", "from_lat": 64.0, "from_lng": -21.0,
+              "to": "Destino", "to_lat": 64.2, "to_lng": -20.5,
+              "duration_minutes": 45, "distance_km": 60, "start_time": "HH:MM"
+            }
+          ],
+          "free_activities": [
+            {
+              "name": "Lugar", "description": "...", "location": "Zona",
+              "lat": 64.2, "lng": -20.5, "start_time": "HH:MM",
+              "duration_minutes": 90, "walking_time_minutes": 30,
+              "image_url": "URL", "tip": "Consejo"
+            }
+          ],
+          "paid_activities": [
+            {
+              "name": "Actividad", "description": "...", "location": "Zona",
+              "lat": 64.3, "lng": -20.3, "start_time": "HH:MM",
+              "duration_minutes": 120, "walking_time_minutes": 20,
+              "price_per_person": 25, "image_url": "URL", "tip": "Consejo",
+              "booking_url": "URL de GetYourGuide, Viator o web oficial para comprar",
+              "free_alternative": {
+                "name": "Alternativa gratuita en la misma zona",
+                "description": "Qué hacer gratis si no se selecciona la de pago"
+              }
+            }
+          ]
+        }
+      ],
+      "totals": {
+        "driving_hours": 0, "walking_hours": 0,
+        "free_time_hours": 0, "paid_time_hours": 0, "budget_per_person": 0
+      }
+    }
+  human_input: true
+
+_legacy_experience_activities_task:
+  description: >
+    DEPRECATED - replaced by blog_read_task + experience_curate_task + route_plan_task
+    Planifica las actividades para {numero_dias} días en {pais_destino}
+    para {numero_adultos} adulto(s).
+
+    IMPORTANTE: Ten en cuenta los horarios de vuelo aprobados:
+    - El PRIMER DÍA, programa actividades solo DESPUÉS de la hora de llegada
+      del vuelo (contempla tiempo de aeropuerto, transporte al centro, etc.).
+    - El ÚLTIMO DÍA, programa actividades solo ANTES de la hora necesaria
+      para llegar al aeropuerto (al menos 3h antes del vuelo de vuelta).
+
+    METODOLOGÍA (seguir en este orden):
+    1. PRIMERO: Usa "Blog crawl" para obtener el contenido COMPLETO de los
+       blogs aprobados en el paso anterior. Lee cada blog con detalle.
+    2. SEGUNDO: Usa "Activities search" para verificar precios de entradas
+       y actividades de pago mencionadas en los blogs.
+    3. TERCERO: Sintetiza lo mejor de los blogs en un plan día a día coherente,
+       intercalando los desplazamientos en coche con las actividades.
+
+    REGLAS PARA EL PLAN:
+    1. Separa "free_activities" (visitas gratuitas) de "paid_activities" (pago).
+    2. Para CADA actividad indica hora de inicio, duración, y coordenadas GPS
+       (latitud y longitud) del lugar.
+    3. Entre actividades, incluye los desplazamientos en coche en el campo
+       "drives" con origen, destino, duración, distancia y coordenadas.
+    4. Incluye paradas para comer y descansos.
+    5. No satures: menos es más.
+    6. Para cada actividad, usa "Activity image search" para obtener una imagen.
+    7. Las coordenadas GPS son IMPRESCINDIBLES para poder mostrar el mapa.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional ni markdown.
+  expected_output: >
+    {
+      "source_blogs": ["URL blog 1 consultado", "URL blog 2 consultado"],
+      "days": [
+        {
+          "day": 1,
+          "title": "Título temático del día",
+          "type": "active" o "rest",
+          "drives": [
+            {
+              "from": "Lugar de origen",
+              "from_lat": 64.1466,
+              "from_lng": -21.9426,
+              "to": "Lugar de destino",
+              "to_lat": 64.2558,
+              "to_lng": -21.1300,
+              "duration_minutes": 45,
+              "distance_km": 60,
+              "start_time": "HH:MM"
+            }
+          ],
+          "free_activities": [
+            {
+              "name": "Nombre del lugar/visita",
+              "description": "Descripción breve",
+              "location": "Ubicación/zona",
+              "lat": 64.2558,
+              "lng": -21.1300,
+              "start_time": "HH:MM",
+              "duration_minutes": 90,
+              "walking_time_minutes": 30,
+              "image_url": "URL de imagen real del lugar",
+              "tip": "Consejo local opcional"
+            }
+          ],
+          "paid_activities": [
+            {
+              "name": "Nombre de la actividad",
+              "description": "Descripción breve",
+              "location": "Ubicación/zona",
+              "lat": 64.3104,
+              "lng": -20.3023,
+              "start_time": "HH:MM",
+              "duration_minutes": 120,
+              "walking_time_minutes": 20,
+              "price_per_person": 25,
+              "image_url": "URL de imagen real del lugar",
+              "tip": "Consejo local opcional"
+            }
+          ]
+        }
+      ],
+      "totals": {
+        "driving_hours": 00,
+        "walking_hours": 00,
+        "free_time_hours": 00,
+        "paid_time_hours": 00,
+        "budget_per_person": 000
+      }
+    }
+  human_input: true
+
+accommodation_search_task:
+  description: >
+    Busca alojamientos tipo Airbnb para CADA ZONA ÚNICA del itinerario aprobado.
+    El itinerario tiene "overnight_zone" para cada noche. Agrupa las noches
+    por zona y busca 3 opciones DIFERENTES por cada zona única.
+
+    IMPORTANTE: Usa las fechas y noches del ITINERARIO APROBADO (contexto),
+    no las del formulario original. Si el vuelo cambió las fechas, el
+    itinerario ya refleja las fechas correctas.
+
+    {numero_adultos} adulto(s), máximo {presupuesto_max_noche} EUR/noche.
+
+    REQUISITOS:
+    - Baño privado: {alojamiento_bano_privado}
+    - Cocina: {alojamiento_cocina}
+
+    INSTRUCCIONES:
+    1. Del itinerario aprobado, identifica las zonas únicas de "overnight_zone".
+    2. Para CADA ZONA ÚNICA (no por noche), usa "Airbnb crawl" UNA sola vez.
+    3. Propón 2 opciones DIFERENTES por zona (no 3, para ser más rápido):
+       - Cada una con nombre DISTINTO.
+    4. Si varias noches consecutivas están en la misma zona, usa las mismas
+       opciones (no busques de nuevo). Referencia la zona en cada noche.
+    5. NO busques imágenes. Deja image_url vacío ("").
+    6. SÉ CONCISO. No repitas opciones. Responde rápido.
+
+    FORMATO: Responde SOLO con JSON válido.
+  expected_output: >
+    {
+      "nights": [
+        {
+          "night": 1,
+          "city": "Ciudad",
+          "zone": "Zona",
+          "options": [
+            {
+              "name": "Nombre único del alojamiento",
+              "neighborhood": "Barrio",
+              "description": "Por qué vale la pena",
+              "price": 000,
+              "rating": 4.8,
+              "private_bathroom": true,
+              "kitchen": true,
+              "superhost": true/false,
+              "image_url": "URL imagen única",
+              "listing_url": "URL Airbnb"
+            }
+          ]
+        }
+      ],
+      "price_range": {"min": 000, "max": 000}
+    }
+  human_input: true
+
+accommodation_night_task:
+  description: >
+    Busca 2 opciones de alojamiento en Airbnb para la NOCHE {night_number}
+    en {pais_destino}. Capacidad: {numero_adultos} adulto(s).
+    Máximo: {presupuesto_max_noche} EUR/noche.
+    Requisitos: baño privado={alojamiento_bano_privado}, cocina={alojamiento_cocina}.
+
+    Del itinerario aprobado (contexto), identifica "overnight_zone" para
+    la noche {night_number} y busca en ESA zona.
+
+    INSTRUCCIONES:
+    1. Usa "Airbnb crawl" con la zona de la noche {night_number}.
+    2. Propón 2 opciones DIFERENTES (nombres distintos).
+    3. NO busques imágenes. Deja image_url vacío.
+    4. SÉ RÁPIDO Y CONCISO. Solo el JSON.
+    7. Respeta el presupuesto máximo de {presupuesto_max_noche} EUR/noche.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional.
+  expected_output: >
+    {
+      "night": {night_number},
+      "city": "Ciudad",
+      "zone": "Zona/Barrio",
+      "options": [
+        {
+          "name": "Nombre/Tipo",
+          "neighborhood": "Barrio",
+          "description": "Por qué vale la pena (1 frase)",
+          "price": 000,
+          "rating": 4.8,
+          "private_bathroom": true/false,
+          "kitchen": true/false,
+          "superhost": true/false,
+          "image_url": "URL imagen",
+          "listing_url": "URL listing Airbnb"
+        }
+      ]
+    }
+
+accommodation_consolidation_task:
+  description: >
+    Consolida los resultados de alojamiento de todas las noches del viaje
+    en un único JSON. Recibes los resultados de cada noche como contexto.
+    NO busques alojamientos nuevos, solo agrupa lo que ya se encontró.
+
+    IMPORTANTE: Revisa que no haya duplicados:
+    - Si dos noches consecutivas están en la misma zona, verifica que las
+      3 opciones de cada noche sean DIFERENTES (nombres distintos).
+    - Si hay duplicados, elimina el repetido y marca que esa opción
+      se repite entre noches.
+    - Asegúrate de que cada opción tiene una image_url DIFERENTE.
+
+    FORMATO: Responde SOLO con un JSON válido, sin texto adicional.
+  expected_output: >
+    {
+      "nights": [
+        {"night": 1, "city": "...", "zone": "...", "options": [...]},
+        {"night": 2, "city": "...", "zone": "...", "options": [...]}
+      ],
+      "price_range": {"min": 000, "max": 000}
+    }
+  human_input: true
+
+trip_compilation_task:
+  description: >
+    Compila el plan de viaje completo con todos los elementos aprobados
+    por el usuario: vuelos, transporte, actividades y alojamientos.
+
+    INSTRUCCIONES:
+    1. Revisa que los horarios de vuelo, actividades y alojamientos sean coherentes.
+    2. Calcula el presupuesto total desglosado por categoría.
+    3. Señala cualquier inconsistencia (ej: actividad programada antes de aterrizar).
+    4. Genera un resumen ejecutivo del viaje.
+
+    FORMATO: Responde SOLO con un JSON válido.
+  expected_output: >
+    {
+      "trip_summary": {
+        "origin": "...",
+        "destination": "...",
+        "dates": {"departure": "YYYY-MM-DD", "return": "YYYY-MM-DD"},
+        "travelers": 0,
+        "total_days": 0
+      },
+      "budget": {
+        "flights": 000,
+        "transport": 000,
+        "activities": 000,
+        "accommodation": 000,
+        "total": 000,
+        "per_person": 000
+      },
+      "warnings": ["lista de inconsistencias si las hay"],
+      "highlights": ["los 3 momentos más destacados del viaje"]
+    }
+  human_input: false

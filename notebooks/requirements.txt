@@ -1,0 +1,7 @@
+crewai
+crewai-tools
+nest_asyncio
+python-dotenv
+pydantic
+pyyaml
+matplotlib

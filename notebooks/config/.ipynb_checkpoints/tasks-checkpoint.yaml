@@ -1,0 +1,61 @@
+vuelos_task:
+  description: >
+    Propon 2-3 opciones de vuelo a {destino} para {personas} personas y {dias} dias.
+    Presupuesto total del viaje: {presupuesto} EUR.
+  expected_output: >
+    2-3 opciones de vuelo con precio aproximado y fechas.
+  agent: vuelos
+
+alojamiento_task:
+  description: >
+    Propon 2 opciones de alojamiento en {destino} para {personas} personas y {dias} noches.
+    Compara una opcion en Airbnb y otra en Booking.
+    Presupuesto total del viaje: {presupuesto} EUR.
+  expected_output: >
+    2 opciones de alojamiento (una de cada plataforma) con precio por noche y zona.
+  agent: alojamiento
+
+actividades_task:
+  description: >
+    Propon un plan de actividades para {dias} dias en {destino} para {personas} personas.
+    Presupuesto total del viaje: {presupuesto} EUR.
+  expected_output: >
+    Actividades dia por dia con coste estimado.
+  agent: actividades
+
+transporte_task:
+  description: >
+    Propon opciones de transporte para moverse entre los puntos del viaje en {destino}
+    durante {dias} dias. Considera bus, tren, taxi, metro segun la zona.
+    Presupuesto total del viaje: {presupuesto} EUR.
+  expected_output: >
+    2-3 opciones de transporte con precio aproximado y tiempo de trayecto.
+  agent: transporte
+
+coche_task:
+  description: >
+    El viajero va a recorrer {destino} en coche ({tipo_coche}).
+    Planifica la ruta por carretera entre las zonas principales para {dias} dias.
+    Incluye peajes y coste de combustible.
+    Si es coche de alquiler, incluye precio aproximado del alquiler.
+  expected_output: >
+    Ruta dia a dia con km estimados, tiempo de conduccion, peajes, combustible
+    y coste de alquiler si aplica.
+  agent: coche
+
+itinerario_task:
+  description: >
+    Con los reportes de vuelos, alojamiento, actividades y transporte,
+    ensambla el itinerario final dia a dia para {personas} personas en {destino} durante {dias} dias.
+    Usa la herramienta Google Maps Distance para calcular distancias y tiempos reales
+    entre las actividades de cada dia, y asi ordenarlas de forma eficiente.
+    Para cada dia incluye: horario aproximado, actividades ordenadas por proximidad,
+    distancia real entre puntos, tiempo de desplazamiento, alojamiento de esa noche y coste del dia.
+    Al final incluye un resumen con el coste total vs presupuesto de {presupuesto} EUR.
+  expected_output: >
+    Itinerario dia a dia con horario, actividades ordenadas por proximidad,
+    distancia real y tiempo entre puntos (de Google Maps), alojamiento,
+    coste por dia y resumen final con total vs presupuesto.
+  agent: itinerario
+  markdown: true
+  output_file: "itinerario_final.md"

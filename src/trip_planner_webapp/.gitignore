@@ -1,0 +1,9 @@
+.cache/
+.env
+.memory/
+__pycache__/
+output/
+logs/
+uploads/
+frontend/node_modules/
+frontend/dist/

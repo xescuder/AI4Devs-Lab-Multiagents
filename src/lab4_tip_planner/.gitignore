@@ -1,7 +1,0 @@
-.cache/
-.env
-__pycache__/
-output/
-logs/
-frontend/node_modules/
-frontend/dist/
